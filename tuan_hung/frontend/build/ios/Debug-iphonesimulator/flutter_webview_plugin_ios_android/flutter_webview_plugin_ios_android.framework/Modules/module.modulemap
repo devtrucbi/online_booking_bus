@@ -1,0 +1,6 @@
+framework module flutter_webview_plugin_ios_android {
+  umbrella header "flutter_webview_plugin_ios_android-umbrella.h"
+
+  export *
+  module * { export * }
+}
