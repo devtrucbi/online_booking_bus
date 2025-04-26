@@ -5,12 +5,11 @@ const app = express();
 const port = 5002;
 
 // Khởi tạo Firebase Admin
-const serviceAccount = require('./tuan-a2941-firebase-adminsdk-fbsvc-39093a509d.json');
+const serviceAccount = require('./tuan-a2941-dbea6d52a35a.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 const db = admin.firestore();
-
 // Middleware để parse JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -70,6 +69,8 @@ app.post('/create_payment_url', async (req, res) => {
   await db.collection('pending_bookings').doc(orderId).set({
     userId,
     tripId,
+    from,
+    to,
     selectedSeats,
     pickupPoint,
     totalPrice,
@@ -80,7 +81,6 @@ app.post('/create_payment_url', async (req, res) => {
 
   res.json({ paymentUrl });
 });
-
 // API xử lý callback từ VNPay
 app.get('/vnpay_return', async (req, res) => {
   let vnp_Params = req.query;
@@ -117,6 +117,8 @@ app.get('/vnpay_return', async (req, res) => {
     await db.collection('bookings').add({
       userId: bookingData.userId,
       tripId: bookingData.tripId,
+      from: bookingData.from,
+      to: bookingData.to,
       selectedSeats: bookingData.selectedSeats,
       pickupPoint: bookingData.pickupPoint,
       totalPrice: bookingData.totalPrice,

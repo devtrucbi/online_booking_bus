@@ -1,1 +1,70 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"tuan-a2941","appId":"1:77406590329:android:0608d22ca996cb5545cba8","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"tuan-a2941","appId":"1:77406590329:ios:fda5c88a23392cf245cba8","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"macos":{"default":{"projectId":"tuan-a2941","appId":"1:77406590329:ios:fda5c88a23392cf245cba8","uploadDebugSymbols":false,"fileOutput":"macos/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"tuan-a2941","configurations":{"android":"1:77406590329:android:0608d22ca996cb5545cba8","ios":"1:77406590329:ios:fda5c88a23392cf245cba8","macos":"1:77406590329:ios:fda5c88a23392cf245cba8","web":"1:77406590329:web:1e3e4dcaa01dce4945cba8","windows":"1:77406590329:web:ced0f478a0d23dad45cba8"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "tuan-a2941",
+          "appId": "1:77406590329:android:0608d22ca996cb5545cba8",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "tuan-a2941",
+          "appId": "1:77406590329:ios:fda5c88a23392cf245cba8",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "macos": {
+        "default": {
+          "projectId": "tuan-a2941",
+          "appId": "1:77406590329:ios:fda5c88a23392cf245cba8",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "tuan-a2941",
+          "configurations": {
+            "android": "1:77406590329:android:0608d22ca996cb5545cba8",
+            "ios": "1:77406590329:ios:fda5c88a23392cf245cba8",
+            "macos": "1:77406590329:ios:fda5c88a23392cf245cba8",
+            "web": "1:77406590329:web:1e3e4dcaa01dce4945cba8",
+            "windows": "1:77406590329:web:ced0f478a0d23dad45cba8"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ],
+      "region": "asia-southeast1"
+    }
+  ],
+  "emulators": {
+    "functions": {
+      "port": 5001
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "ui": {
+      "port": 4000
+    },
+    "singleProjectMode": true
+  }
+}

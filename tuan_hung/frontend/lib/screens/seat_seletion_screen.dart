@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:tuan_hung/models/trip.dart';
+import 'package:tuan_hung/widgets/custom_appbar.dart';
 
 class SeatSelectionScreen extends StatefulWidget {
   const SeatSelectionScreen({super.key});
@@ -15,8 +16,8 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
   List<String> _selectedSeats = [];
   String? _selectedPickupPoint;
   late TabController _tabController;
-  late List<String> _floor1Seats; // Ghế tầng 1 (A)
-  late List<String> _floor2Seats; // Ghế tầng 2 (B)
+  late List<String> _allFloor1Seats;
+  late List<String> _allFloor2Seats;
 
   @override
   void initState() {
@@ -27,23 +28,17 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Lấy Map từ arguments và truy cập key 'trip'
     final arguments = ModalRoute.of(context)!.settings.arguments;
     if (arguments == null) {
-      // Xử lý trường hợp arguments là null
       Navigator.pop(context);
       return;
     }
     final tripData = arguments as Map<String, dynamic>;
     _trip = tripData['trip'] as Trip;
 
-    // Tách ghế thành tầng 1 (A) và tầng 2 (B)
-    _floor1Seats =
-        _trip.availableSeats.where((seat) => seat.startsWith('A')).toList();
-    _floor2Seats =
-        _trip.availableSeats.where((seat) => seat.startsWith('B')).toList();
+    _allFloor1Seats = List.generate(15, (index) => 'A${index + 1}');
+    _allFloor2Seats = List.generate(15, (index) => 'B${index + 1}');
 
-    // Nếu có pickupPoints, chọn điểm đón mặc định
     if (_trip.pickupPoints.isNotEmpty) {
       _selectedPickupPoint = _trip.pickupPoints[0];
     }
@@ -60,106 +55,188 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     final availablePickupPoints = _trip.pickupPoints;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Chọn ghế - ${_trip.from} → ${_trip.to}'),
-        backgroundColor: Colors.blue,
+      appBar: CustomAppBar(
+        title: 'Chọn ghế - ${_trip.from} → ${_trip.to}',
         bottom: TabBar(
           controller: _tabController,
+          labelColor: Colors.black87,
+          unselectedLabelColor: Colors.black54,
+          indicatorColor: Colors.black87,
           tabs: const [Tab(text: 'Tầng 1'), Tab(text: 'Tầng 2')],
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: FadeInUp(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // TabBarView để hiển thị ghế theo tầng
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    // Tầng 1
-                    _buildSeatGrid(_floor1Seats, 'Tầng 1'),
-                    // Tầng 2
-                    _buildSeatGrid(_floor2Seats, 'Tầng 2'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Chọn điểm đón:',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              // Kiểm tra nếu không có điểm đón
-              availablePickupPoints.isEmpty
-                  ? const Text(
-                    'Không có điểm đón khả dụng',
-                    style: TextStyle(color: Colors.red),
-                  )
-                  : DropdownButtonFormField<String>(
-                    value: _selectedPickupPoint,
-                    decoration: const InputDecoration(
-                      labelText: 'Điểm đón',
-                      border: OutlineInputBorder(),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.yellow, Colors.amber],
+          ),
+        ),
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // TabBarView
+                        SizedBox(
+                          height: constraints.maxHeight * 0.5,
+                          child: TabBarView(
+                            controller: _tabController,
+                            children: [
+                              _buildSeatGrid(_allFloor1Seats, 'Tầng 1'),
+                              _buildSeatGrid(_allFloor2Seats, 'Tầng 2'),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        // Số ghế đã chọn
+                        FadeInUp(
+                          duration: const Duration(milliseconds: 500),
+                          child: Text(
+                            'Số ghế đã chọn: ${_selectedSeats.length}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        // Chọn điểm đón
+                        FadeInUp(
+                          duration: const Duration(milliseconds: 500),
+                          delay: const Duration(milliseconds: 100),
+                          child:
+                              availablePickupPoints.isEmpty
+                                  ? const Text(
+                                    'Không có điểm đón khả dụng',
+                                    style: TextStyle(
+                                      color: Colors.redAccent,
+                                      fontFamily: 'Roboto',
+                                    ),
+                                  )
+                                  : DropdownButtonFormField<String>(
+                                    value: _selectedPickupPoint,
+                                    decoration: InputDecoration(
+                                      labelText: 'Điểm đón',
+                                      labelStyle: const TextStyle(
+                                        color: Colors.black87,
+                                      ),
+                                      prefixIcon: const Icon(
+                                        Icons.location_on,
+                                        color: Colors.black87,
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.white.withOpacity(0.8),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                          color: Colors.black,
+                                          width: 2,
+                                        ),
+                                      ),
+                                    ),
+                                    dropdownColor: Colors.white,
+                                    style: const TextStyle(
+                                      color: Colors.black87,
+                                      fontFamily: 'Roboto',
+                                    ),
+                                    items:
+                                        availablePickupPoints
+                                            .map(
+                                              (point) => DropdownMenuItem(
+                                                value: point,
+                                                child: Text(point),
+                                              ),
+                                            )
+                                            .toList(),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _selectedPickupPoint = value;
+                                      });
+                                    },
+                                  ),
+                        ),
+                        const SizedBox(height: 20),
+                        // Nút tiếp tục
+                        ZoomIn(
+                          duration: const Duration(milliseconds: 500),
+                          delay: const Duration(milliseconds: 200),
+                          child: _buildGradientButton(
+                            context: context,
+                            label: 'Tiếp tục thanh toán',
+                            onTap:
+                                _selectedSeats.isEmpty ||
+                                        _selectedPickupPoint == null
+                                    ? null
+                                    : () {
+                                      Navigator.pushNamed(
+                                        context,
+                                        '/payment',
+                                        arguments: {
+                                          'trip': _trip,
+                                          'selectedSeats': _selectedSeats,
+                                          'pickupPoint': _selectedPickupPoint,
+                                        },
+                                      );
+                                    },
+                          ),
+                        ),
+                      ],
                     ),
-                    items:
-                        availablePickupPoints
-                            .map(
-                              (point) => DropdownMenuItem(
-                                value: point,
-                                child: Text(point),
-                              ),
-                            )
-                            .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedPickupPoint = value;
-                      });
-                    },
                   ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed:
-                    _selectedSeats.isEmpty || _selectedPickupPoint == null
-                        ? null
-                        : () {
-                          Navigator.pushNamed(
-                            context,
-                            '/payment',
-                            arguments: {
-                              'trip': _trip,
-                              'selectedSeats': _selectedSeats,
-                              'pickupPoint': _selectedPickupPoint,
-                            },
-                          );
-                        },
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
                 ),
-                child: const Text('Tiếp tục thanh toán'),
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSeatGrid(List<String> seats, String floorLabel) {
-    if (seats.isEmpty) {
-      return Center(child: Text('Không có ghế trống ở $floorLabel'));
+  Widget _buildSeatGrid(List<String> allSeats, String floorLabel) {
+    if (allSeats.isEmpty) {
+      return Center(
+        child: FadeInUp(
+          duration: const Duration(milliseconds: 500),
+          child: Text(
+            'Không có ghế ở $floorLabel',
+            style: const TextStyle(
+              color: Colors.black54,
+              fontSize: 18,
+              fontFamily: 'Roboto',
+            ),
+          ),
+        ),
+      );
     }
 
-    // Sắp xếp ghế theo số (VD: A1, A2, A3, ...)
-    seats.sort((a, b) {
+    allSeats.sort((a, b) {
       final aNumber = int.parse(a.substring(1));
       final bNumber = int.parse(b.substring(1));
       return aNumber.compareTo(bNumber);
     });
 
-    // Mỗi tầng có 5 hàng, mỗi hàng 3 ghế (1-1-1)
     List<Widget> seatRows = [];
     for (int row = 0; row < 5; row++) {
       int startIndex = row * 3;
@@ -167,63 +244,84 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ..._buildSeatWidgets(seats, startIndex, startIndex + 1), // Ghế 1
-            const SizedBox(width: 20), // Khoảng trống
-            ..._buildSeatWidgets(
-              seats,
-              startIndex + 1,
-              startIndex + 2,
-            ), // Ghế 2
-            const SizedBox(width: 20), // Khoảng trống
-            ..._buildSeatWidgets(
-              seats,
-              startIndex + 2,
-              startIndex + 3,
-            ), // Ghế 3
+            ..._buildSeatWidgets(allSeats, startIndex, startIndex + 1),
+            const SizedBox(width: 20),
+            ..._buildSeatWidgets(allSeats, startIndex + 1, startIndex + 2),
+            const SizedBox(width: 20),
+            ..._buildSeatWidgets(allSeats, startIndex + 2, startIndex + 3),
           ],
         ),
       );
-      seatRows.add(const SizedBox(height: 10)); // Khoảng cách giữa các hàng
+      seatRows.add(const SizedBox(height: 10));
     }
 
     return SingleChildScrollView(child: Column(children: seatRows));
   }
 
   List<Widget> _buildSeatWidgets(
-    List<String> seats,
+    List<String> allSeats,
     int startIndex,
     int endIndex,
   ) {
     List<Widget> widgets = [];
-    for (int i = startIndex; i < endIndex && i < seats.length; i++) {
-      final seat = seats[i];
+    for (int i = startIndex; i < endIndex && i < allSeats.length; i++) {
+      final seat = allSeats[i];
+      final isAvailable = _trip.availableSeats.contains(seat);
       final isSelected = _selectedSeats.contains(seat);
+      final isBooked = !isAvailable;
+
       widgets.add(
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-          child: GestureDetector(
-            onTap: () {
-              setState(() {
-                if (isSelected) {
-                  _selectedSeats.remove(seat);
-                } else {
-                  _selectedSeats.add(seat);
-                }
-              });
-            },
-            child: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.green : Colors.grey[300],
-                borderRadius: BorderRadius.circular(8.0),
-              ),
-              child: Center(
-                child: Text(
-                  seat,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.black,
-                    fontWeight: FontWeight.bold,
+        BounceInDown(
+          duration: const Duration(milliseconds: 500),
+          delay: Duration(milliseconds: 50 * i),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            child: GestureDetector(
+              onTap:
+                  isAvailable
+                      ? () {
+                        setState(() {
+                          if (isSelected) {
+                            _selectedSeats.remove(seat);
+                          } else {
+                            _selectedSeats.add(seat);
+                          }
+                        });
+                      }
+                      : null,
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color:
+                      isBooked
+                          ? Colors.redAccent
+                          : (isSelected ? Colors.green : Colors.grey[300]),
+                  borderRadius: BorderRadius.circular(12.0),
+                  border: Border.all(
+                    color: isBooked ? Colors.red : Colors.black,
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    isBooked ? 'X' : seat,
+                    style: TextStyle(
+                      color:
+                          isBooked || isSelected
+                              ? Colors.white
+                              : Colors.black87,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      fontFamily: 'Roboto',
+                    ),
                   ),
                 ),
               ),
@@ -233,5 +331,51 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
       );
     }
     return widgets;
+  }
+
+  Widget _buildGradientButton({
+    required BuildContext context,
+    required String label,
+    required VoidCallback? onTap,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white, Colors.white70],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Center(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

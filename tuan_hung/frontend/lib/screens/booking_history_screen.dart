@@ -1,110 +1,187 @@
 import 'package:flutter/material.dart';
 import 'package:tuan_hung/models/booking.dart';
 import 'package:tuan_hung/services/booking_service.dart';
+import 'package:tuan_hung/widgets/custom_appbar.dart';
+import 'package:animate_do/animate_do.dart';
 
-class BookingHistoryScreen extends StatefulWidget {
+class BookingHistoryScreen extends StatelessWidget {
   const BookingHistoryScreen({super.key});
 
   @override
-  State<BookingHistoryScreen> createState() => _BookingHistoryScreenState();
-}
-
-class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
-  final _bookingService = BookingService();
-  List<Booking> _bookings = [];
-  bool _isLoading = false;
-  String _errorMessage = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchBookings();
-  }
-
-  Future<void> _fetchBookings() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = '';
-    });
-
-    try {
-      final bookings = await _bookingService.getUserBookings();
-      setState(() {
-        _bookings = bookings;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _cancelBooking(String bookingId) async {
-    try {
-      await _bookingService.cancelBooking(bookingId);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Hủy vé thành công')));
-      _fetchBookings();
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Lỗi khi hủy vé: $e')));
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final bookingService = BookingService();
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Lịch sử đặt vé')),
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _errorMessage.isNotEmpty
-              ? Center(
-                child: Text(
-                  _errorMessage,
-                  style: const TextStyle(color: Colors.red),
-                ),
-              )
-              : _bookings.isEmpty
-              ? const Center(child: Text('Chưa có vé nào'))
-              : ListView.builder(
-                itemCount: _bookings.length,
-                itemBuilder: (context, index) {
-                  final booking = _bookings[index];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(
-                      vertical: 8.0,
-                      horizontal: 16.0,
+      appBar: const CustomAppBar(title: 'Lịch sử đặt vé'),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.yellow, Colors.amber],
+          ),
+        ),
+        child: SafeArea(
+          child: FutureBuilder<List<Booking>>(
+            future: bookingService.getUserBookings(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Center(
+                  child: Text(
+                    'Lỗi: ${snapshot.error}',
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontFamily: 'Roboto',
                     ),
-                    child: ListTile(
-                      title: Text('${booking.from} -> ${booking.to}'),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Ngày: ${booking.date}'),
-                          Text('Ghế: ${booking.seat}'),
-                          Text('Trạng thái: ${booking.status}'),
-                          Text('Điểm đón: ${booking.pickupPoint}'),
-                        ],
+                  ),
+                );
+              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'Không có lịch sử đặt vé',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontFamily: 'Roboto',
+                      color: Colors.black54,
+                    ),
+                  ),
+                );
+              }
+
+              final bookings = snapshot.data!;
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
+                itemCount: bookings.length,
+                itemBuilder: (context, index) {
+                  final booking = bookings[index];
+
+                  return FadeInUp(
+                    duration: const Duration(milliseconds: 500),
+                    delay: Duration(milliseconds: 100 * index),
+                    child: Card(
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      trailing:
-                          booking.status == 'Pending'
-                              ? IconButton(
-                                icon: const Icon(
-                                  Icons.cancel,
-                                  color: Colors.red,
-                                ),
-                                onPressed: () => _cancelBooking(booking.id),
-                              )
-                              : null,
+                      margin: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Chuyến xe: ${booking.from} - ${booking.to}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Poppins',
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Ngày: ${booking.date} - ${booking.time}',
+                              style: const TextStyle(
+                                fontFamily: 'Roboto',
+                                color: Colors.black54,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Ghế: ${booking.selectedSeats.join(", ")}',
+                              style: const TextStyle(
+                                fontFamily: 'Roboto',
+                                color: Colors.black54,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Tổng tiền: ${booking.totalPrice} VNĐ',
+                              style: const TextStyle(
+                                fontFamily: 'Roboto',
+                                color: Colors.black54,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Phương thức thanh toán: ${booking.paymentMethod}',
+                              style: const TextStyle(
+                                fontFamily: 'Roboto',
+                                color: Colors.black54,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Ngày đặt: ${booking.bookingDate.toString()}',
+                              style: const TextStyle(
+                                fontFamily: 'Roboto',
+                                color: Colors.black54,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Trạng thái: ${booking.status}',
+                              style: const TextStyle(
+                                fontFamily: 'Roboto',
+                                color: Colors.black54,
+                              ),
+                            ),
+                            if (booking.status == 'confirmed') ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  TextButton(
+                                    onPressed: () async {
+                                      try {
+                                        await bookingService.cancelBooking(
+                                          booking.id,
+                                        );
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Hủy vé thành công'),
+                                          ),
+                                        );
+                                        // Cập nhật giao diện
+                                        (context as Element).markNeedsBuild();
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(content: Text('Lỗi: $e')),
+                                        );
+                                      }
+                                    },
+                                    child: const Text(
+                                      'Hủy vé',
+                                      style: TextStyle(
+                                        color: Colors.redAccent,
+                                        fontFamily: 'Poppins',
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
                     ),
                   );
                 },
-              ),
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 }
