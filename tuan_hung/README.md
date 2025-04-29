@@ -34,7 +34,7 @@ Clone mã nguồn từ repository về máy của bạn:
 git clone https://github.com/devtrucbi/online_booking_bus.git
 cd online_booking_bus
 
-2. Di chuyển đến folder dự án (tuan_hung)
+2. Di chuyển đến folder dự án (/tuan_hung)
 - di chuyển đến thư mục /backend, chạy lệnh "npm install" để cài đặt các thư viện cần thiết,
 sau đó chạy lệnh "node server.js" để khởi động server
 - di chuyển đến thư mục /frontend/function, chạy lệnh "npm install" dể cài đặt thư viện cần thiết, sau đó tiếp tục chạy lệnh "firebase deploy --only functions"
@@ -51,8 +51,6 @@ Account user: (email: user01@gmail.com, password: user123)
 Ghi chú
 
 Thanh toán VNPay: Hiện tại, ứng dụng sử dụng VNPay Sandbox. Nếu bạn muốn tích hợp VNPay chính thức, hãy cập nhật thông tin vnp_TmnCode và vnp_HashSecret trong server.js.
-Hủy vé: Ứng dụng cho phép hủy vé và phục hồi ghế trong BookingHistoryScreen và AdminBookingsScreen.
-Quản lý đặt vé: Admin có thể xem, cập nhật trạng thái, và xóa đặt vé trong AdminBookingsScreen.
 
 Xử lý lỗi thường gặp
 
@@ -74,11 +72,7 @@ Backend không phản hồi:
 Kiểm tra log trong terminal để tìm lỗi.
 
 
-
-Đóng góp
-Nếu bạn muốn đóng góp vào dự án, hãy tạo pull request hoặc liên hệ với tôi qua email: [your-email@example.com].
 Tác giả
-
-Tuan Hung - [your-email@example.com]
+Tuan Hung - [trucbicntt0306@gmail.com]
 
 
