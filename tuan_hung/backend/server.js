@@ -5,7 +5,7 @@ const app = express();
 const port = 5002;
 
 // Khởi tạo Firebase Admin
-const serviceAccount = require('./tuan-a2941-dbea6d52a35a.json');
+const serviceAccount = require('./tuan-a2941-firebase-adminsdk-fbsvc-251aeaab2d.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
@@ -25,7 +25,24 @@ app.post('/create_payment_url', async (req, res) => {
   const { tripId, userId, selectedSeats, pickupPoint, totalPrice } = req.body;
 
   if (!tripId || !userId || !selectedSeats || !pickupPoint || !totalPrice) {
-    return res.status(400).json({ error: 'Thiếu thông tin cần thiết' });
+      return res.status(400).json({ error: 'Thiếu thông tin cần thiết' });
+  }
+
+  // Lấy thông tin chuyến xe từ Firestore
+  const tripRef = db.collection('chuyen_xe').doc(tripId);
+  const tripDoc = await tripRef.get();
+  if (!tripDoc.exists) {
+      return res.status(404).json({ error: 'Chuyến xe không tồn tại' });
+  }
+
+  const tripData = tripDoc.data();
+  // Gán giá trị mặc định một cách rõ ràng, đảm bảo không có giá trị undefined
+  const from = typeof tripData.from !== 'undefined' ? tripData.from : '';
+  const to = typeof tripData.to !== 'undefined' ? tripData.to : '';
+
+  // Kiểm tra nếu `from` hoặc `to` không tồn tại hoặc rỗng
+  if (!from || !to) {
+      return res.status(400).json({ error: 'Thông tin chuyến xe không đầy đủ (thiếu điểm đi hoặc điểm đến)' });
   }
 
   // Tạo mã đơn hàng (orderId) duy nhất
@@ -34,18 +51,18 @@ app.post('/create_payment_url', async (req, res) => {
 
   // Tạo các tham số cho VNPay
   let vnp_Params = {
-    vnp_Version: '2.1.0',
-    vnp_Command: 'pay',
-    vnp_TmnCode: vnp_TmnCode,
-    vnp_Amount: totalPrice * 100, // VNPay yêu cầu số tiền nhân 100 (VNĐ)
-    vnp_CreateDate: createDate,
-    vnp_CurrCode: 'VND',
-    vnp_IpAddr: req.ip || '127.0.0.1',
-    vnp_Locale: 'vn',
-    vnp_OrderInfo: `Thanh toan don hang ${orderId}`,
-    vnp_OrderType: 'Vé Xe', // Loại hàng hóa: vé xe
-    vnp_ReturnUrl: vnp_ReturnUrl,
-    vnp_TxnRef: orderId,
+      vnp_Version: '2.1.0',
+      vnp_Command: 'pay',
+      vnp_TmnCode: vnp_TmnCode,
+      vnp_Amount: totalPrice * 100, // VNPay yêu cầu số tiền nhân 100 (VNĐ)
+      vnp_CreateDate: createDate,
+      vnp_CurrCode: 'VND',
+      vnp_IpAddr: req.ip || '127.0.0.1',
+      vnp_Locale: 'vn',
+      vnp_OrderInfo: `Thanh toan don hang ${orderId}`,
+      vnp_OrderType: 'Vé Xe', // Loại hàng hóa: vé xe
+      vnp_ReturnUrl: vnp_ReturnUrl,
+      vnp_TxnRef: orderId,
   };
 
   // Sắp xếp tham số theo thứ tự alphabet
@@ -53,34 +70,51 @@ app.post('/create_payment_url', async (req, res) => {
 
   // Tạo chữ ký (checksum)
   const signData = Object.keys(vnp_Params)
-    .map(key => `${key}=${encodeURIComponent(vnp_Params[key]).replace(/%20/g, '+')}`)
-    .join('&');
+      .map(key => `${key}=${encodeURIComponent(vnp_Params[key]).replace(/%20/g, '+')}`)
+      .join('&');
   const hmac = crypto.createHmac('sha512', vnp_HashSecret);
   const vnp_SecureHash = hmac.update(signData).digest('hex');
   vnp_Params['vnp_SecureHash'] = vnp_SecureHash;
 
   // Tạo URL thanh toán
   const queryString = Object.keys(vnp_Params)
-    .map(key => `${key}=${encodeURIComponent(vnp_Params[key]).replace(/%20/g, '+')}`)
-    .join('&');
+      .map(key => `${key}=${encodeURIComponent(vnp_Params[key]).replace(/%20/g, '+')}`)
+      .join('&');
   const paymentUrl = `${vnp_Url}?${queryString}`;
 
   // Lưu thông tin đặt vé tạm thời (trước khi thanh toán)
   await db.collection('pending_bookings').doc(orderId).set({
-    userId,
-    tripId,
-    from,
-    to,
-    selectedSeats,
-    pickupPoint,
-    totalPrice,
-    orderId,
-    status: 'pending',
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      userId,
+      tripId,
+      from,
+      to,
+      selectedSeats,
+      pickupPoint,
+      totalPrice,
+      orderId,
+      status: 'pending',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 
   res.json({ paymentUrl });
 });
+// API tìm kiếm chuyến xe
+app.get('/trips', async (req, res) => {
+  const { from, to, date } = req.query;
+  const snapshot = await db.collection('chuyen_xe')
+    .where('from', '==', from)
+    .where('to', '==', to)
+    .where('date', '==', date)
+    .get();
+
+  const trips = [];
+  snapshot.forEach(doc => {
+    trips.push({ id: doc.id, ...doc.data() });
+  });
+
+  res.json(trips);
+});
+
 // API xử lý callback từ VNPay
 app.get('/vnpay_return', async (req, res) => {
   let vnp_Params = req.query;

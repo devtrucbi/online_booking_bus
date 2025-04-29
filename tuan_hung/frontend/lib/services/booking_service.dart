@@ -14,18 +14,15 @@ class BookingService {
           await FirebaseFirestore.instance
               .collection('bookings')
               .where('userId', isEqualTo: user.uid)
-              .orderBy(
-                'bookingDate',
-                descending: true,
-              ) // Sắp xếp theo ngày đặt vé
+              .orderBy('bookingDate', descending: true)
               .get();
 
-      return snapshot.docs.map((doc) {
+      List<Booking> bookings = [];
+      for (var doc in snapshot.docs) {
         final data = doc.data();
 
         // Kiểm tra các trường bắt buộc
-        if (!data.containsKey('trip') ||
-            !data.containsKey('selectedSeats') ||
+        if (!data.containsKey('selectedSeats') ||
             !data.containsKey('totalPrice') ||
             !data.containsKey('status') ||
             !data.containsKey('pickupPoint') ||
@@ -33,8 +30,25 @@ class BookingService {
           throw Exception('Dữ liệu đặt vé không đầy đủ: ${doc.id}');
         }
 
-        return Booking.fromJson({'id': doc.id, ...data});
-      }).toList();
+        // Lấy thông tin date và time từ chuyen_xe
+        final tripSnapshot =
+            await FirebaseFirestore.instance
+                .collection('chuyen_xe')
+                .doc(data['tripId'])
+                .get();
+
+        if (!tripSnapshot.exists) {
+          throw Exception('Chuyến xe không tồn tại: ${data['tripId']}');
+        }
+
+        final tripData = tripSnapshot.data()!;
+        data['date'] = tripData['date'] as String?;
+        data['time'] = tripData['time'] as String?;
+
+        bookings.add(Booking.fromJson({'id': doc.id, ...data}));
+      }
+
+      return bookings;
     } catch (e) {
       throw Exception('Lỗi khi lấy lịch sử đặt vé: $e');
     }
@@ -58,9 +72,20 @@ class BookingService {
             throw Exception('Chỉ có thể hủy vé đang ở trạng thái confirmed');
           }
 
-          // Kiểm tra thời gian chuyến xe
-          final tripDateStr = bookingData['trip']['date'] as String;
-          final tripTimeStr = bookingData['trip']['time'] as String;
+          // Lấy date và time từ chuyen_xe để kiểm tra thời gian
+          final tripSnapshot =
+              await FirebaseFirestore.instance
+                  .collection('chuyen_xe')
+                  .doc(bookingData['tripId'])
+                  .get();
+
+          if (!tripSnapshot.exists) {
+            throw Exception('Chuyến xe không tồn tại');
+          }
+
+          final tripData = tripSnapshot.data()!;
+          final tripDateStr = tripData['date'] as String;
+          final tripTimeStr = tripData['time'] as String;
           final tripDateTimeStr =
               '$tripDateStr $tripTimeStr'; // Ví dụ: "25/04/2025 14:00"
           final tripDateTime = DateTime.parse(
@@ -85,9 +110,9 @@ class BookingService {
             throw Exception('Chuyến xe không tồn tại');
           }
 
-          final tripData = tripDoc.data()!;
+          final tripData2 = tripDoc.data()!;
           final availableSeats = List<String>.from(
-            tripData['availableSeats'] ?? [],
+            tripData2['availableSeats'] ?? [],
           );
           final selectedSeats = List<String>.from(
             bookingData['selectedSeats'] ?? [],

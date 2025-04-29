@@ -76,17 +76,57 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
 
   Future<void> _deleteBooking(String bookingId) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('bookings')
-          .doc(bookingId)
-          .delete();
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        // Lấy thông tin đặt vé
+        final bookingRef = FirebaseFirestore.instance
+            .collection('bookings')
+            .doc(bookingId);
+        final bookingDoc = await transaction.get(bookingRef);
+
+        if (!bookingDoc.exists) {
+          throw Exception('Đặt vé không tồn tại');
+        }
+
+        final bookingData = bookingDoc.data()!;
+        final tripId = bookingData['tripId'] as String;
+        final selectedSeats = List<String>.from(
+          bookingData['selectedSeats'] ?? [],
+        );
+
+        // Lấy thông tin chuyến xe
+        final tripRef = FirebaseFirestore.instance
+            .collection('chuyen_xe')
+            .doc(tripId);
+        final tripDoc = await transaction.get(tripRef);
+
+        if (!tripDoc.exists) {
+          throw Exception('Chuyến xe không tồn tại');
+        }
+
+        final tripData = tripDoc.data()!;
+        final availableSeats = List<String>.from(
+          tripData['availableSeats'] ?? [],
+        );
+
+        // Phục hồi ghế: Thêm lại các ghế đã chọn vào availableSeats
+        availableSeats.addAll(selectedSeats);
+
+        // Cập nhật availableSeats trong chuyen_xe
+        transaction.update(tripRef, {'availableSeats': availableSeats});
+
+        // Xóa đặt vé
+        transaction.delete(bookingRef);
+      });
+
       if (_isMounted) {
         setState(() {
           _bookings.removeWhere((booking) => booking['id'] == bookingId);
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Xóa đặt vé thành công!')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Xóa đặt vé và phục hồi ghế thành công!'),
+          ),
+        );
       }
     } catch (e) {
       if (_isMounted) {
