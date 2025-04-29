@@ -5,7 +5,7 @@ const app = express();
 const port = 5002;
 
 // Khởi tạo Firebase Admin
-const serviceAccount = require('./tuan-a2941-firebase-adminsdk-fbsvc-251aeaab2d.json');
+const serviceAccount = require('./tuan-a2941-firebase-adminsdk-fbsvc-354d24b36f.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });

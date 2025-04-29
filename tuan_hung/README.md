@@ -28,6 +28,7 @@ tuan_hung/
     ├── package.json     # File cấu hình dependencies của Node.js
     └── tuan-a2941-dbea6d52a35a.json  # Service Account Key của Firebase
 
+LINK DEMOE: https://youtu.be/GV2G71jPns0
 Hướng dẫn cài đặt
 1. Clone repository hoặc mã có sẵn
 Clone mã nguồn từ repository về máy của bạn:
@@ -46,7 +47,12 @@ sau đó chạy lệnh "node server.js" để khởi động server
 Account admin: (email: admin@gmail.com, password: admin123)
 Account user: (email: user01@gmail.com, password: user123)
 
-
+Tài khoản thanh toán có sẵn:
+Ngân hàng: NCB
+STk: 9704198526191432198
+Tên chủ thẻ: NGUYEN VAN A
+Ngày phát hàng: 07/15
+Mã OTP: 123456
 
 Ghi chú
 
